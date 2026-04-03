@@ -171,7 +171,7 @@
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Firebase Config
+    // 更新された Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyAkemRWtpaCntJKu3HimAcvjJ1F62PSpT8",
         authDomain: "worksheet-997f0.firebaseapp.com",
@@ -192,7 +192,7 @@
     let isAdmin = false;
     let currentUser = null;
 
-    // Auth Initialization
+    // 認証初期化
     onAuthStateChanged(auth, (user) => {
         currentUser = user;
         if (user) {
@@ -258,7 +258,7 @@
         grid.appendChild(card);
     }
 
-    // --- Helper Functions ---
+    // --- ヘルパー関数 ---
     window.downloadBinary = (filename, base64) => {
         try {
             const parts = base64.split(';base64,');
@@ -288,7 +288,7 @@
         }
     };
 
-    // --- Admin Logic ---
+    // --- 管理ロジック ---
     window.openAdmin = () => {
         document.getElementById('adminOverlay').classList.remove('hidden');
     };
