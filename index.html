@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Hub - Digital Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;500&display=swap');
+
+        :root {
+            --space-black: #020617;
+            --nebula-purple: #7c3aed;
+            --nebula-pink: #db2777;
+            --star-white: #f8fafc;
+        }
+
+        body {
+            background-color: var(--space-black);
+            color: var(--star-white);
+            font-family: 'Noto Sans JP', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Space Background Effects */
+        .nebula-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(219, 39, 119, 0.1) 0%, transparent 50%);
+            filter: blur(80px);
+        }
+
+        .stars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background-image: radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 250px 250px;
+            opacity: 0.2;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+        }
+
+        .resource-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .resource-card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.07);
+            border-color: var(--nebula-purple);
+            box-shadow: 0 10px 30px -10px rgba(124, 58, 237, 0.3);
+        }
+
+        .title-font {
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 0.1em;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, var(--nebula-purple), var(--nebula-pink));
+            transition: all 0.3s ease;
+        }
+
+        .btn-download:hover { filter: brightness(1.2); transform: scale(1.02); }
+
+        .loader {
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            width: 20px; height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .admin-active .btn-delete { display: flex; }
+        .btn-delete {
+            display: none;
+            color: #f87171;
+            transition: all 0.2s;
+        }
+        .btn-delete:hover { color: #ef4444; transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+<div class="nebula-bg"></div>
+<div class="stars"></div>
+
+<div class="container mx-auto px-4 py-12 max-w-6xl">
+    <!-- Header -->
+    <header class="flex justify-between items-end mb-12 border-b border-white/10 pb-8">
+        <div>
+            <p class="text-purple-400 text-[10px] font-bold tracking-[0.4em] mb-2 uppercase">Central Command</p>
+            <h1 class="text-3xl md:text-5xl font-bold title-font">RESOURCE HUB</h1>
+        </div>
+        <button onclick="openAdmin()" class="text-[10px] border border-white/20 px-4 py-1.5 rounded-full text-gray-400 hover:text-white hover:border-purple-500 transition-all uppercase tracking-widest">
+            Admin Panel
+        </button>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="glass-panel p-6 md:p-10" id="mainContainer">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-sm font-bold flex items-center text-gray-400 tracking-widest uppercase">
+                <span class="w-2 h-2 bg-pink-500 rounded-full mr-3 animate-pulse"></span>
+                Active Files
+            </h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="resourceGrid">
+            <!-- Loading State -->
+            <div class="col-span-full py-20 text-center">
+                <div class="loader mx-auto mb-4"></div>
+                <p class="text-gray-500 text-sm italic">Scanning nebula for available resources...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="mt-12 text-center">
+        <p class="text-[10px] text-gray-600 uppercase tracking-[0.3em]">Educational Resource Node v2.0 // Secured Connection</p>
+    </footer>
+</div>
+
+<!-- Admin Modal -->
+<div id="adminOverlay" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+    <div class="bg-slate-900 border border-white/10 w-full max-w-md p-8 rounded-2xl shadow-2xl">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-xl font-bold title-font text-purple-400 tracking-tighter">MISSION CONTROL</h2>
+            <button onclick="closeAdmin()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+        </div>
+        
+        <div id="loginSection">
+            <input type="password" id="adminPassword" placeholder="ACCESS CODE" class="w-full bg-black/50 border border-white/10 rounded-xl p-4 mb-4 focus:outline-none focus:border-purple-500 text-white text-center tracking-[0.5em]">
+            <button onclick="verifyPassword()" class="w-full btn-download py-4 rounded-xl font-bold text-white uppercase tracking-widest text-xs">Authorize Access</button>
+        </div>
+
+        <div id="uploadSection" class="hidden">
+            <div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center mb-6 cursor-pointer hover:border-purple-500/50 hover:bg-white/5 transition-all" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" class="hidden" onchange="updateFileName()" accept="application/pdf">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span id="fileNameLabel" class="text-gray-400 text-xs block">DRAG & DROP OR CLICK TO SELECT PDF</span>
+                <span class="text-[9px] text-gray-600 block mt-1">MAX SIZE: 750KB</span>
+            </div>
+            <input type="text" id="wsTitle" placeholder="FILE LABEL (e.g. Lesson 01)" class="w-full bg-black/50 border border-white/10 rounded-xl p-4 mb-6 focus:outline-none focus:border-purple-500 text-white text-sm">
+            <button onclick="handleUpload()" id="uploadBtn" class="w-full btn-download py-4 rounded-xl font-bold text-white text-xs uppercase tracking-widest">Upload Resource</button>
+            <button onclick="logoutAdmin()" class="w-full mt-6 text-[10px] text-gray-500 hover:text-red-400 uppercase tracking-widest">Terminate Session</button>
+        </div>
+        
+        <div id="statusMessage" class="mt-6 text-center text-[10px] font-bold h-4 uppercase tracking-widest"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyAkemRWtpaCntJKu3HimAcvjJ1F62PSpT8",
+        authDomain: "worksheet-997f0.firebaseapp.com",
+        projectId: "worksheet-997f0",
+        storageBucket: "worksheet-997f0.firebasestorage.app",
+        messagingSenderId: "454290906078",
+        appId: "1:454290906078:web:0dd6ab24d2cd15dbff1b4f",
+        measurementId: "G-9VEX1SPN89"
+    };
+
+    const appId = 'worksheet-997f0-app';
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const grid = document.getElementById('resourceGrid');
+    const statusMsg = document.getElementById('statusMessage');
+    let isAdmin = false;
+    let currentUser = null;
+
+    // Auth Initialization
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user) {
+            startSync();
+        } else {
+            signInAnonymously(auth).catch(console.error);
+        }
+    });
+
+    function startSync() {
+        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'worksheets');
+        onSnapshot(colRef, (snapshot) => {
+            grid.innerHTML = '';
+            if (snapshot.empty) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-20 text-center border border-dashed border-white/5 rounded-2xl">
+                        <p class="text-gray-600 text-sm italic">The library is currently empty.</p>
+                    </div>`;
+                return;
+            }
+            snapshot.forEach(doc => renderCard(doc.id, doc.data()));
+        }, (err) => {
+            console.error("Firestore Error:", err);
+            grid.innerHTML = '<div class="col-span-full text-red-500 text-center text-xs">UPLINK ERROR: Please check connection.</div>';
+        });
+    }
+
+    function renderCard(id, data) {
+        const card = document.createElement('div');
+        card.className = "resource-card p-6 flex flex-col h-full";
+        card.innerHTML = `
+            <div class="flex justify-between items-start mb-6">
+                <div class="bg-purple-500/10 text-purple-400 text-[10px] font-bold px-2 py-1 rounded border border-purple-500/20 uppercase tracking-tighter">
+                    ${data.fileExt || 'PDF'}
+                </div>
+                <button class="btn-delete text-gray-600" onclick="window.deleteItem('${id}')" title="Delete">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-grow mb-6">
+                <h3 class="text-white font-bold text-lg leading-tight mb-2">${data.title}</h3>
+                <div class="flex items-center text-gray-500 text-[10px] space-x-3">
+                    <span class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                        </svg>
+                        ${data.fileSize || 'N/A'}
+                    </span>
+                    <span class="opacity-30">|</span>
+                    <span>${new Date(data.createdAt).toLocaleDateString()}</span>
+                </div>
+            </div>
+            <button class="btn-download w-full py-3 rounded-xl text-[10px] font-bold text-white uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-2" 
+                    onclick="window.downloadBinary('${data.fileName}', '${data.fileData}')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
+            </button>
+        `;
+        grid.appendChild(card);
+    }
+
+    // --- Helper Functions ---
+    window.downloadBinary = (filename, base64) => {
+        try {
+            const parts = base64.split(';base64,');
+            const contentType = parts[0].split(':')[1];
+            const raw = window.atob(parts[1]);
+            const uInt8Array = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; ++i) uInt8Array[i] = raw.charCodeAt(i);
+
+            const blob = new Blob([uInt8Array], { type: contentType });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error("Download Error:", e);
+        }
+    };
+
+    window.deleteItem = async (id) => {
+        if (!isAdmin) return;
+        if (confirm("Remove this file from the resource hub?")) {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'worksheets', id));
+        }
+    };
+
+    // --- Admin Logic ---
+    window.openAdmin = () => {
+        document.getElementById('adminOverlay').classList.remove('hidden');
+    };
+    window.closeAdmin = () => {
+        document.getElementById('adminOverlay').classList.add('hidden');
+    };
+    window.verifyPassword = () => {
+        if (document.getElementById('adminPassword').value === "893012") {
+            isAdmin = true;
+            document.getElementById('mainContainer').classList.add('admin-active');
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            statusMsg.style.color = "#4ade80";
+            statusMsg.innerText = "AUTHENTICATED";
+        } else {
+            statusMsg.style.color = "#f87171";
+            statusMsg.innerText = "ACCESS DENIED";
+        }
+    };
+    window.logoutAdmin = () => {
+        isAdmin = false;
+        document.getElementById('mainContainer').classList.remove('admin-active');
+        document.getElementById('loginSection').classList.remove('hidden');
+        document.getElementById('uploadSection').classList.add('hidden');
+        window.closeAdmin();
+    };
+    window.updateFileName = () => {
+        const file = document.getElementById('fileInput').files[0];
+        if (file) document.getElementById('fileNameLabel').innerText = file.name;
+    };
+    window.handleUpload = async () => {
+        const title = document.getElementById('wsTitle').value;
+        const file = document.getElementById('fileInput').files[0];
+        const btn = document.getElementById('uploadBtn');
+
+        if (!title || !file) return;
+        if (file.size > 750000) {
+            statusMsg.innerText = "FILE TOO LARGE";
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = `<div class="loader mx-auto"></div>`;
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'worksheets', 'res-' + Date.now()), {
+                    title,
+                    fileName: file.name,
+                    fileExt: file.name.split('.').pop().toUpperCase(),
+                    fileSize: (file.size / 1024).toFixed(1) + ' KB',
+                    fileData: reader.result,
+                    createdAt: Date.now()
+                });
+                statusMsg.innerText = "UPLINK SUCCESSFUL";
+                setTimeout(window.closeAdmin, 800);
+            } catch (e) {
+                statusMsg.innerText = "UPLINK FAILED";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Upload Resource";
+            }
+        };
+    };
+</script>
+</body>
+</html>
